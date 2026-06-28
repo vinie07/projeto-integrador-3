@@ -44,3 +44,11 @@ Critérios de avaliação:
 3.  Gnuplot
     
 4.  dashboard web# projeto-integrador-3
+
+---
+Tutorial:
+1.    As seguintes pastas: **C,Dashboard,gnus,shell** pegue seus arquivos e coloque tudo numa **unica** pasta
+2. Execute o shell (como admin/permissao de execução)
+3. gcc programa.c -o programa
+4. ./programa
+5. Abrir o html
