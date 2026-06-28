@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<!--
+==============================================================================
+  Estrutura da pagina:
+    1. Cabecalho (titulo do painel)
+    2. Faixa de KPIs (5 numeros-resumo)
+    3. Grade com os 5 graficos
+    4. Rodape
+    5. "Lightbox": ao clicar num grafico, ele abre ampliado
+==============================================================================
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <!-- Faz a pagina se ajustar a largura da tela (celular/desktop) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel SRAG - Síndrome Respiratória Aguda Grave</title>
+
+  <style>
+    /* ===================== ESTILOS GERAIS ===================== */
+
+    /* Zera margens/preenchimentos padrao e faz padding nao "estourar" larguras */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #e9edf2;   /* cinza-azulado claro de fundo */
+      color: #15202e;        /* cor principal do texto (azul bem escuro) */
+      padding-bottom: 48px;
+    }
+
+    /* ===================== CABECALHO ===================== */
+    header {
+      /* Degrade azul-marinho, identidade visual do painel */
+      background: linear-gradient(120deg, #0d1a2b 0%, #16304c 60%, #1b3a5c 100%);
+      color: #fff;
+      padding: 32px 28px 64px;  /* o 64px embaixo cria espaco p/ os KPIs subirem */
+    }
+    header h1 { font-size: 28px; font-weight: 700; }
+    header p  {
+      font-size: 14px;
+      color: #b6c8d8;          /* azul claro para o subtitulo */
+      margin-top: 8px;
+      max-width: 720px;
+    }
+
+    /* "container" central que limita a largura do conteudo */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 28px; }
+
+    /* ===================== FAIXA DE KPIs ===================== */
+    /* Grade automatica: cria quantas colunas couberem (minimo 180px cada) */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: -40px;       /* "puxa" os cartoes para cima do cabecalho */
+    }
+    .kpi {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 30, 50, .10);
+      padding: 16px 18px;
+      border-top: 8px solid var(--cor);  /* faixa colorida no topo do cartao */
+    }
+    .kpi .rotulo {
+      font-size: 12px; letter-spacing: .10em; text-transform: uppercase;
+      color: #7a8696; font-weight: 600;
+    }
+    .kpi .valor { font-size: 24px; font-weight: 700; margin-top: 6px; }
+    .kpi .sub   { font-size: 12px; color: #8a96a6; margin-top: 4px; }
+
+    /* Rotulo da secao "Visualizacoes" */
+    .secao {
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: #5b6877;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 32px 0 12px;
+    }
+
+    /* ===================== GRADE DE GRAFICOS ===================== */
+    /* Duas colunas iguais em telas largas */
+    .graficos {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 22px;
+    }
+    /* Cada grafico fica dentro de um "cartao" branco */
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e4e9ef;
+      box-shadow: 0 4px 16px rgba(15, 30, 50, .07);
+      overflow: hidden;
+    }
+    /* O grafico de Estados ocupa a largura inteira (tem muitas barras/UFs) */
+    .card.largo { grid-column: 1 / -1; }
+
+    /* Cabecalho do cartao: bolinha colorida + titulo */
+    .card .titulo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 18px;
+      border-bottom: 1px solid #eef1f5;
+      font-size: 16px; font-weight: 600; color: #1a2738;
+    }
+    .card .titulo .ponto {
+      width: 10px; height: 10px; border-radius: 3px;
+      background: var(--cor);   /* mesma cor do grafico correspondente */
+    }
+
+    /* A imagem do grafico. cursor: zoom-in indica que da para clicar/ampliar */
+    .card img {
+      width: 100%; height: auto; display: block;
+      padding: 14px 16px;
+      cursor: zoom-in;
+    }
+
+    /* Texto de analise (insight) embaixo de cada grafico */
+    .card .analise {
+      padding: 0 18px 16px;
+      font-size: 13px; line-height: 1.5; color: #56636f;
+    }
+
+    /* ===================== RODAPE ===================== */
+    footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 12px;
+      color: #8893a2;
+    }
+
+    /* ===================== LIGHTBOX (imagem ampliada) ===================== */
+    /* Comeca escondido (display:none). O JS troca para flex ao clicar. */
+    .lightbox {
+      display: none;
+      position: fixed; inset: 0;          /* cobre a tela toda */
+      background: rgba(9, 16, 27, .82);   /* fundo escuro translucido */
+      align-items: center; justify-content: center;
+      padding: 24px; z-index: 50;
+    }
+    .lightbox img {
+      max-width: 920px; width: 100%;
+      background: #fff; border-radius: 12px; padding: 16px;
+    }
+
+    /* ===================== RESPONSIVO (celular) ===================== */
+    /* Em telas estreitas, os graficos passam a ficar em coluna unica */
+    @media (max-width: 720px) {
+      .graficos { grid-template-columns: 1fr; }
+      .card.largo { grid-column: auto; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ====================== 1. CABECALHO ====================== -->
+  <header>
+    <div class="container">
+      <h1>Painel SRAG &mdash; Síndrome Respiratória Aguda Grave</h1>
+      <p>Análise de dados públicos do SUS. Casos, internações e óbitos
+         consolidados por ano, estado e gênero (2021&ndash;2026).</p>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- ====================== 2. FAIXA DE KPIs ====================== -->
+    <!-- Cada cartao mostra um numero-resumo. A cor da faixa do topo
+         (--cor) combina com o grafico relacionado. -->
+    <section class="kpis">
+      <div class="kpi" style="--cor:#2b3340">
+        <div class="rotulo">Ano de pico</div>
+        <div class="valor">2021</div>
+        <div class="sub">casos, internações e óbitos</div>
+      </div>
+      <div class="kpi" style="--cor:#2f9fe0">
+        <div class="rotulo">Casos no pico</div>
+        <div class="valor">~1,77 mi</div>
+        <div class="sub">em 2021</div>
+      </div>
+      <div class="kpi" style="--cor:#2f9fe0">
+        <div class="rotulo">Estado líder</div>
+        <div class="valor">São Paulo</div>
+        <div class="sub">~1,27 mi de casos</div>
+      </div>
+      <div class="kpi" style="--cor:#9b30c2">
+        <div class="rotulo">Óbitos no pico</div>
+        <div class="valor">~30,3 mil</div>
+        <div class="sub">em 2021</div>
+      </div>
+      <div class="kpi" style="--cor:#16a085">
+        <div class="rotulo">Predomínio</div>
+        <div class="valor">Masculino</div>
+        <div class="sub">em todos os anos</div>
+      </div>
+    </section>
+
+    <!-- Rotulo da secao dos graficos -->
+    <div class="secao">Visualizações &middot; GNUplot</div>
+
+    <!-- ====================== 3. GRADE DE GRAFICOS ====================== -->
+    <!-- Cada <figure> e um cartao com: titulo, imagem do grafico (lida do
+         arquivo PNG na mesma pasta) e o texto de analise. O onclick chama
+         ampliar() para abrir a imagem maior no lightbox. -->
+    <section class="graficos">
+
+      <!-- Grafico 1: Casos por Ano -->
+      <figure class="card" style="--cor:#2b3340">
+        <div class="titulo"><span class="ponto"></span>Casos por Ano</div>
+        <img src="casos.png" alt="Casos de SRAG por ano"
+             onclick="ampliar(this)">
+        <div class="analise">Pico em 2021 com cerca de 1,77 milhão de casos.
+          Forte queda a partir de 2022 e estabilização em patamar baixo nos
+          anos seguintes.</div>
+      </figure>
+
+      <!-- Grafico 2: Internacoes por Ano -->
+      <figure class="card" style="--cor:#d9a400">
+        <div class="titulo"><span class="ponto"></span>Internações por Ano</div>
+        <img src="internacoes.png" alt="Internações por SRAG por ano"
+             onclick="ampliar(this)">
+        <div class="analise">As internações acompanham a curva de casos, com
+          auge em 2021 (~1,66 milhão) e redução expressiva após a fase mais
+          crítica da pandemia.</div>
+      </figure>
+
+      <!-- Grafico 3: Obitos por Ano -->
+      <figure class="card" style="--cor:#9b30c2">
+        <div class="titulo"><span class="ponto"></span>Óbitos por Ano</div>
+        <img src="obitos.png" alt="Óbitos por SRAG por ano"
+             onclick="ampliar(this)">
+        <div class="analise">Óbitos atingem o máximo em 2021 (~30,3 mil).
+          Diferente dos casos, há nova alta em 2025, indicando letalidade
+          relevante mesmo com menos casos.</div>
+      </figure>
+
+      <!-- Grafico 4: Casos por Genero e Ano -->
+      <figure class="card" style="--cor:#16a085">
+        <div class="titulo"><span class="ponto"></span>Casos por Gênero e Ano</div>
+        <img src="generos.png" alt="Casos de SRAG por gênero e ano"
+             onclick="ampliar(this)">
+        <div class="analise">Predomínio do sexo masculino em todos os anos,
+          com a maior diferença absoluta registrada no pico de 2021.</div>
+      </figure>
+
+      <!-- Grafico 5: Casos por Estado (ocupa a linha inteira) -->
+      <figure class="card largo" style="--cor:#2f9fe0">
+        <div class="titulo"><span class="ponto"></span>Casos por Estado (UF)</div>
+        <img src="estados.png" alt="Casos de SRAG por estado"
+             onclick="ampliar(this)">
+        <div class="analise">São Paulo concentra de longe o maior volume de
+          casos (~1,27 milhão), seguido por Minas Gerais, Rio de Janeiro,
+          Paraná e Rio Grande do Sul.</div>
+      </figure>
+
+    </section>
+
+    <!-- ====================== 4. RODAPE ====================== -->
+    <footer>
+      Projeto Integrador 3 &middot; Valores aproximados (em milhares, exceto óbitos)
+    </footer>
+
+  </div><!-- fim .container -->
+
+  <!-- ====================== 5. LIGHTBOX ====================== -->
+  <!-- Camada escura que cobre a tela com a imagem ampliada.
+       Comeca escondida; o JS mostra ao clicar num grafico. -->
+  <div class="lightbox" id="lightbox" onclick="fechar()">
+    <img id="lightbox-img" src="" alt="Grafico ampliado">
+  </div>
+
+  <!-- ====================== JAVASCRIPT ====================== -->
+  <script>
+    // Pega as referencias dos elementos do lightbox uma unica vez.
+    const caixa   = document.getElementById('lightbox');      // fundo escuro
+    const imgZoom = document.getElementById('lightbox-img');  // imagem grande
+
+    // ampliar(): chamada quando o usuario clica num grafico.
+    //   - copia o src (a propria imagem base64) para a imagem do lightbox
+    //   - mostra a caixa (display: flex)
+    function ampliar(elemento) {
+      imgZoom.src = elemento.src;
+      caixa.style.display = 'flex';
+    }
+
+    // fechar(): esconde o lightbox novamente.
+    function fechar() {
+      caixa.style.display = 'none';
+    }
+
+    // Tambem fecha o lightbox ao pressionar a tecla ESC.
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') fechar();
+    });
+  </script>
+
+</body>
+</html>
